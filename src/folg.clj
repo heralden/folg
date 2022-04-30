@@ -13,7 +13,32 @@
        <html>
        <head>
          <meta charset=\"utf-8\">
-         <link href=\"./style.css\" rel=\"stylesheet\">
+         <style>
+html {
+  max-width: 70ch;
+  padding: 3em 1em;
+  margin: auto;
+  line-height: 1.75;
+  font-size: 1.25em;
+}
+
+h1,h2,h3,h4,h5,h6 {
+  margin: 3em 0 1em;
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 400;
+}
+
+p,ul,ol {
+  margin-bottom: 2em;
+  color: #1d1d1d;
+  font-family: Georgia, Times, serif;
+}
+
+img {
+  width: 100%;
+  height: auto;
+}
+         </style>
          <title>Blogg</title>
        </head>
        <body>"
@@ -57,8 +82,7 @@
 
 (defn build [{:keys [out] :as _opts}]
   (let [target-dir (str out)
-        assets-data (assets/load-assets "public" ["/style.css"
-                                                  #"(?i).+\.(jpg|png)"])
+        assets-data (assets/load-assets "public" [#"(?i).+\.(jpg|png)"])
         assets (optimizations/all assets-data {})
         md-pages (stasis/slurp-directory "resources/public/" #"\.md$")
         pages (into {} (map (fn [[path md]]
