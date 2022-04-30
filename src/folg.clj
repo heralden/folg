@@ -13,7 +13,7 @@
        <html>
        <head>
          <meta charset=\"utf-8\">
-         <link href=\"/styles/folg.css\" rel=\"stylesheet\">
+         <link href=\"./style.css\" rel=\"stylesheet\">
          <title>Blogg</title>
        </head>
        <body>"
@@ -28,7 +28,7 @@
   (if (seq image-paths)
     (str md "\n"
          (->> (sort image-paths)
-              (map #(str "![Photograph](" (str/escape % url-cmap) ")"))
+              (map #(str "![Photograph](." (str/escape % url-cmap) ")"))
               (str/join "\n")))
     md))
 
@@ -55,9 +55,9 @@
                    "/b/path.html" "<p>more text</p>"})
      {"/index.html" "<p>text</p><hr><p>more text</p>"}))
 
-(defn export [{:keys [out] :as _opts}]
+(defn build [{:keys [out] :as _opts}]
   (let [target-dir (str out)
-        assets-data (assets/load-assets "public" ["/styles/folg.css"
+        assets-data (assets/load-assets "public" ["/style.css"
                                                   #"(?i).+\.(jpg|png)"])
         assets (optimizations/all assets-data {})
         md-pages (stasis/slurp-directory "resources/public/" #"\.md$")
@@ -71,6 +71,6 @@
     (stasis/export-pages (merge-pages pages) target-dir {:optimus-assets assets})))
 
 (defn watch [opts]
-  (export opts)
-  (watch-dir (fn [_] (export opts)) (io/file "resources/public"))
+  (build opts)
+  (watch-dir (fn [_] (build opts)) (io/file "resources/public"))
   (while true))
