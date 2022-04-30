@@ -1,12 +1,12 @@
-(ns folg.core
+(ns folg
   (:require [clojure.string :as str]
+            [clojure.java.io :as io]
             [markdown.core :as md]
             [stasis.core :as stasis]
             [optimus.assets :as assets]
             [optimus.optimizations :as optimizations]
-            [optimus.export]))
-
-(def target-dir "out")
+            [optimus.export]
+            [juxt.dirwatch :refer [watch-dir]]))
 
 (defn wrap-html [s]
   (str "<!DOCTYPE html>
@@ -55,8 +55,9 @@
                    "/b/path.html" "<p>more text</p>"})
      {"/index.html" "<p>text</p><hr><p>more text</p>"}))
 
-(defn export []
-  (let [assets-data (assets/load-assets "public" ["/styles/folg.css"
+(defn export [{:keys [out] :as _opts}]
+  (let [target-dir (str out)
+        assets-data (assets/load-assets "public" ["/styles/folg.css"
                                                   #"(?i).+\.(jpg|png)"])
         assets (optimizations/all assets-data {})
         md-pages (stasis/slurp-directory "resources/public/" #"\.md$")
@@ -69,5 +70,7 @@
     (optimus.export/save-assets assets target-dir)
     (stasis/export-pages (merge-pages pages) target-dir {:optimus-assets assets})))
 
-(comment
-  (export))
+(defn watch [opts]
+  (export opts)
+  (watch-dir (fn [_] (export opts)) (io/file "resources/public"))
+  (while true))
