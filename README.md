@@ -5,13 +5,13 @@
 Place markdown and image files into `resources/public` under a directory with a name to be ordered (usually YYYY-MM-DD). Each directory represents a single blog post with one markdown file optionally followed by one or more images. Blog posts are concatenated into a single *index.html* and sorted in reverse, so that the chronologically most recent post is at the top. Images within a blog post are sorted with the oldest first.
 
 ```
-▾ resources/public/
-  ▾ 2022-04-30/
-      post.md
-  ▾ 2022-05-01/
-      post.md
-      P1050287.JPG
-      P1050291.JPG
+▾ resources/public/
+  ▾ 2022-04-30/
+      post.md
+  ▾ 2022-05-01/
+      post.md
+      P1050287.JPG
+      P1050291.JPG
 ```
 
 Beyond ordering, directory and file names have no relevance.
