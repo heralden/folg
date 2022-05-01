@@ -53,9 +53,13 @@ img {
   (if (seq image-paths)
     (str md "\n"
          (->> (sort image-paths)
-              (map #(str "![Photograph](." (str/escape % url-cmap) ")"))
+              (map #(str "![Failed to load image](." (str/escape % url-cmap) ")"))
               (str/join "\n")))
     md))
+
+(comment
+  (= (append-images "Foo" ["/foo/baz.jpg" "/foo/with spaces.png"])
+     "Foo\n![Failed to load image](./foo/baz.jpg)\n![Failed to load image](./foo/with%20spaces.png)"))
 
 (defn get-related [path assets-data]
   (let [md-dir (drop-last (str/split path #"/"))]

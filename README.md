@@ -31,3 +31,7 @@ Build initially, then rebuild on changes to resources.
 ```
 clj -X folg/watch :out /var/www/blog
 ```
+
+## Customisation
+
+Just edit `src/folg.clj`. Thanks to the excellent libraries it uses, it's very little code.
