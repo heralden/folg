@@ -51,7 +51,7 @@ img {
 
 (defn append-images [md image-paths]
   (if (seq image-paths)
-    (str md "\n"
+    (str md "\n\n"
          (->> (sort image-paths)
               (map #(str "![Failed to load image](." (str/escape % url-cmap) ")"))
               (str/join "\n")))
@@ -59,7 +59,7 @@ img {
 
 (comment
   (= (append-images "Foo" ["/foo/baz.jpg" "/foo/with spaces.png"])
-     "Foo\n![Failed to load image](./foo/baz.jpg)\n![Failed to load image](./foo/with%20spaces.png)"))
+     "Foo\n\n![Failed to load image](./foo/baz.jpg)\n![Failed to load image](./foo/with%20spaces.png)"))
 
 (defn get-related [path assets-data]
   (let [md-dir (drop-last (str/split path #"/"))]
