@@ -77,26 +77,35 @@ img {
   {"/index.html"
    (->> (sort-by key #(compare %2 %1) pages)
         (map val)
-        (str/join "<hr>"))})
+        (str/join "<hr>")
+        (wrap-html))})
 
 (comment
   (= (merge-pages {"/a/path.html" "<p>text</p>"
                    "/b/path.html" "<p>more text</p>"})
      {"/index.html" "<p>text</p><hr><p>more text</p>"}))
 
+(defn get-file-names! []
+  (keep #(when (.isFile %) (.getName %))
+        (file-seq (io/file "resources/public"))))
+
 (defn build [{:keys [out] :as _opts}]
-  (let [target-dir (str out)
-        assets-data (assets/load-assets "public" [#"(?i).+\.(jpg|png)"])
-        assets (optimizations/all assets-data {})
-        md-pages (stasis/slurp-directory "resources/public/" #"\.md$")
-        pages (into {} (map (fn [[path md]]
-                              [(str/replace path #"\.md$" ".html")
-                               (-> (append-images md (get-related path assets-data))
-                                   md/md-to-html-string wrap-html)]))
-                    md-pages)]
-    (stasis/empty-directory! target-dir)
-    (optimus.export/save-assets assets target-dir)
-    (stasis/export-pages (merge-pages pages) target-dir {:optimus-assets assets})))
+  (when (.exists (io/file "resources/public"))
+    (let [target-dir (str out)
+          file-names (get-file-names!)
+          assets-data (when (some #(re-find #"(?i).+\.(jpg|png)" %) file-names)
+                        (assets/load-assets "public" [#"(?i).+\.(jpg|png)"]))
+          assets (optimizations/all assets-data {})
+          md-pages (when (some #(re-find #"\.md$" %) file-names)
+                     (stasis/slurp-directory "resources/public/" #"\.md$"))
+          pages (into {} (map (fn [[path md]]
+                                [(str/replace path #"\.md$" ".html")
+                                 (-> (append-images md (get-related path assets-data))
+                                     (md/md-to-html-string))]))
+                      md-pages)]
+      (stasis/empty-directory! target-dir)
+      (optimus.export/save-assets assets target-dir)
+      (stasis/export-pages (merge-pages pages) target-dir {:optimus-assets assets}))))
 
 (defn watch [opts]
   (build opts)
