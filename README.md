@@ -23,13 +23,13 @@ The intention is to accommodate publishing posts from a smartphone using a file 
 Generate static files for a blog to the specified directory (will delete any contents).
 
 ```
-clj -X folg/build :out /var/www/blog
+clojure -X folg/build :title '"My Blog"' :out '"/var/www/blog"'
 ```
 
 Build initially, then rebuild on changes to resources.
 
 ```
-clj -X folg/watch :out /var/www/blog
+clojure -X folg/watch :title '"My Blog"' :out '"/var/www/blog"'
 ```
 
 ## Customisation

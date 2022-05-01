@@ -8,7 +8,7 @@
             [optimus.export]
             [juxt.dirwatch :refer [watch-dir]]))
 
-(defn wrap-html [s]
+(defn wrap-html [title s]
   (str "<!DOCTYPE html>
        <html>
        <head>
@@ -39,7 +39,7 @@ img {
   height: auto;
 }
          </style>
-         <title>Blogg</title>
+         <title>" title "</title>
        </head>
        <body>"
        s
@@ -73,25 +73,27 @@ img {
   (= (get-related "/foo/bar.md" [{:path "/foo/baz.jpg"} {:path "/bar/bog.jpg"}])
      ["/foo/baz.jpg"]))
 
-(defn merge-pages [pages]
+(defn merge-pages [pages title]
   {"/index.html"
    (->> (sort-by key #(compare %2 %1) pages)
         (map val)
         (str/join "<hr>")
-        (wrap-html))})
+        (wrap-html title))})
 
 (comment
-  (= (merge-pages {"/a/path.html" "<p>text</p>"
-                   "/b/path.html" "<p>more text</p>"})
-     {"/index.html" "<p>text</p><hr><p>more text</p>"}))
+  (= (merge-pages {"/1/path.html" "<p>text</p>"
+                   "/0/path.html" "<p>more text</p>"}
+                  "My title")
+     {"/index.html" (wrap-html "My title" "<p>text</p><hr><p>more text</p>")}))
 
 (defn get-file-names! []
   (keep #(when (.isFile %) (.getName %))
         (file-seq (io/file "resources/public"))))
 
-(defn build [{:keys [out] :as _opts}]
+(defn build [{:keys [out title] :as _opts}]
   (when (.exists (io/file "resources/public"))
     (let [target-dir (str out)
+          title (str (or title "Blog"))
           file-names (get-file-names!)
           assets-data (when (some #(re-find #"(?i).+\.(jpg|png)" %) file-names)
                         (assets/load-assets "public" [#"(?i).+\.(jpg|png)"]))
@@ -105,7 +107,7 @@ img {
                       md-pages)]
       (stasis/empty-directory! target-dir)
       (optimus.export/save-assets assets target-dir)
-      (stasis/export-pages (merge-pages pages) target-dir {:optimus-assets assets}))))
+      (stasis/export-pages (merge-pages pages title) target-dir {:optimus-assets assets}))))
 
 (defn watch [opts]
   (build opts)
