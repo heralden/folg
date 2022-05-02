@@ -90,7 +90,7 @@ img {
   (keep #(when (.isFile %) (.getName %))
         (file-seq (io/file "resources/public"))))
 
-(defn build [{:keys [out title] :as _opts}]
+(defn generate-site! [{:keys [out title] :as _opts}]
   (when (.exists (io/file "resources/public"))
     (let [target-dir (str out)
           title (str (or title "Blog"))
@@ -109,7 +109,17 @@ img {
       (optimus.export/save-assets assets target-dir)
       (stasis/export-pages (merge-pages pages title) target-dir {:optimus-assets assets}))))
 
+(defn validate-opts! [opts]
+  (when (str/blank? (:out opts))
+    (println "Please specify a path for :out")
+    (System/exit 1)))
+
+(defn build [opts]
+  (validate-opts! opts)
+  (generate-site! opts))
+
 (defn watch [opts]
-  (build opts)
-  (watch-dir (fn [_] (build opts)) (io/file "resources/public"))
+  (validate-opts! opts)
+  (generate-site! opts)
+  (watch-dir (fn [_] (generate-site! opts)) (io/file "resources/public"))
   (while true))
