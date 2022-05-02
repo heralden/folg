@@ -6,7 +6,7 @@
             [optimus.assets :as assets]
             [optimus.optimizations :as optimizations]
             [optimus.export]
-            [juxt.dirwatch :refer [watch-dir]]))
+            [juxt.dirwatch :refer [watch-dir close-watcher]]))
 
 (defn wrap-html [title s]
   (str "<!DOCTYPE html>
@@ -121,5 +121,7 @@ img {
 (defn watch [opts]
   (validate-opts! opts)
   (generate-site! opts)
-  (watch-dir (fn [_] (generate-site! opts)) (io/file "resources/public"))
-  (while true))
+  (let [watcher (watch-dir (fn [_] (generate-site! opts)) (io/file "resources/public"))]
+    (.addShutdownHook (Runtime/getRuntime) (Thread. (fn [] (close-watcher watcher)))))
+  (while true
+    (Thread/sleep 5000)))
