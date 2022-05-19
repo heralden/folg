@@ -76,13 +76,13 @@
   (let [nav (str "<div class=\"post-navigation\">"
                  "<span>"
                  (when prev-path
-                   (str "« <a href=\"" deploy-path (path->url prev-path) "\">" (get-meta-title prev-meta) "</a>"))
+                   (str "<a href=\"" deploy-path (path->url prev-path) "\">«&nbsp;" (get-meta-title prev-meta) "</a>"))
                  "</span>"
                  (when include-home
                    (str "<a href=\"" (or deploy-path "/") "\">Home</a>"))
                  "<span>"
                  (when next-path
-                   (str "<a href=\"" deploy-path (path->url next-path) "\">" (get-meta-title next-meta) "</a> »"))
+                   (str "<a href=\"" deploy-path (path->url next-path) "\">" (get-meta-title next-meta) "&nbsp;»</a>"))
                  "</span>"
                  "</div>")]
     (str (when-not no-top nav) s nav)))
