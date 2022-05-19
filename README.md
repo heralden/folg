@@ -45,6 +45,8 @@ clojure -X folg/watch :title '"My Blog"' :out '"/var/www/blog"'
 
 By default, you'll get a *stream of thought* layout, which is suitable for many short posts with little text and few images. If you write fewer longer posts, you would probably prefer having a *table of contents* with each post being their own page. You can enable this with the `:toc true` argument.
 
+When using the *stream of thought* layout, you won't get any pagination unless you set it with `:paginate 5`. This argument can't be used together with `:toc`, which already paginates to single pages. Using pagination is recommended when you have lots of posts, particularly when rich with images.
+
 ## Customisation
 
 Just edit `src/folg.clj`. Thanks to the excellent libraries it uses, it's very little code.

@@ -106,7 +106,7 @@ img {
   (str "<ul>"
        (str/join
          (map (fn [[path {:keys [metadata]}]]
-                (str "<a href=\"" (path->url path) "\"><li>" (first (:title metadata)) "</li></a>"))
+                (str "<a href=\"." (path->url path) "\"><li>" (first (:title metadata)) "</li></a>"))
               posts))
        "</ul>"))
 
@@ -124,33 +124,53 @@ img {
   (let [nav (str "<div class=\"post-navigation\">"
                  "<span>"
                  (when prev-path
-                   (str "« <a href=\"" (path->url prev-path) "\">" (get-meta-title prev-meta) "</a>"))
+                   (str "« <a href=\".." (path->url prev-path) "\">" (get-meta-title prev-meta) "</a>"))
                  "</span>"
                  (when include-home
                    "<a href=\"../\">Home</a>")
                  "<span>"
                  (when next-path
-                   (str "<a href=\"" (path->url next-path) "\">" (get-meta-title next-meta) "</a> »"))
+                   (str "<a href=\".." (path->url next-path) "\">" (get-meta-title next-meta) "</a> »"))
                  "</span>"
                  "</div>")]
     (str (when-not no-top nav) s nav)))
 
-(defn create-pages [pages title & {:keys [toc]}]
+(defn create-pages [pages title & {:keys [toc paginate]}]
   (let [posts (sort-by (comp first :date :metadata val) #(compare %2 %1) pages)]
     (merge
-      (when toc
+      (cond
+
+        toc
         (into {} (map (fn [[prev-post [path :as post] next-post]]
                         [(path->url path)
                          (->> (post->html post)
                               (wrap-navigation {:include-home true} prev-post next-post)
                               (wrap-html title))]))
-              (partition 3 1 (concat [nil] posts [nil]))))
+              (partition 3 1 (concat [nil] posts [nil])))
+
+        paginate
+        (let [paginated-posts (map-indexed vector (partition paginate paginate nil posts))]
+          (into {} (map (fn [[index the-posts]]
+                          [(str "/" index "/")
+                           (->> (map post->html the-posts)
+                                (str/join "<hr>")
+                                (wrap-navigation {:no-top true}
+                                                 [(if (> index 1) (str "/" (dec index) "/") "/") {:metadata {:title ["Previous"]}}]
+                                                 (when (< (inc index) (count paginated-posts))
+                                                   [(str "/" (inc index) "/") {:metadata {:title ["Next"]}}]))
+                                (wrap-html title))]))
+                (drop 1 paginated-posts))))
+
       {"/index.html"
-       (wrap-html title (if toc
-                          (str (create-toc posts)
-                               (->> (post->html (first posts))
-                                    (wrap-navigation {:no-top true} nil (second posts))))
-                          (str/join "<hr>" (map post->html posts))))})))
+       (wrap-html title (cond
+                          toc (str (create-toc posts)
+                                   (->> (post->html (first posts))
+                                        (wrap-navigation {:no-top true} nil (second posts))))
+                          paginate (->> (take paginate posts)
+                                        (map post->html)
+                                        (str/join "<hr>")
+                                        (wrap-navigation {:no-top true} nil ["/1/" {:metadata {:title ["Next"]}}]))
+                          :else (str/join "<hr>" (map post->html posts))))})))
 
 (comment
   (create-pages {"/foo/path.html" {:metadata {:title ["Foo"]
@@ -170,15 +190,27 @@ img {
                                    :html "<p>more text</p>"}}
                "My title"
                :toc true)
-  {"./foo/" \space
-   "./bar/" \space
+  {"/foo/" \space
+   "/bar/" \space
+   "/index.html" \space}
+
+  (create-pages {"/foo/path.html" {:metadata {:title ["Foo"]
+                                              :date ["1990-01-01"]}
+                                   :html "<p>text</p>"}
+                 "/bar/path.html" {:metadata {:title ["Bar"]
+                                              :date ["1990-01-02"]}
+                                   :html "<p>more text</p>"}}
+               "My title"
+               :paginate 1)
+  {"/0/" \space
+   "/1/" \space
    "/index.html" \space})
 
 (defn get-file-names! []
   (keep #(when (.isFile %) (.getName %))
         (file-seq (io/file "resources/public"))))
 
-(defn generate-site! [{:keys [out title toc] :as _opts}]
+(defn generate-site! [{:keys [out title toc paginate] :as _opts}]
   (when (.exists (io/file "resources/public"))
     (let [target-dir (str out)
           title (str (or title "Blog"))
@@ -195,11 +227,17 @@ img {
                       md-pages)]
       (stasis/empty-directory! target-dir)
       (optimus.export/save-assets assets target-dir)
-      (stasis/export-pages (create-pages pages title :toc toc) target-dir {:optimus-assets assets}))))
+      (stasis/export-pages (create-pages pages title :toc toc :paginate paginate)
+                           target-dir
+                           {:optimus-assets assets}))))
 
 (defn validate-opts! [opts]
   (when (str/blank? (:out opts))
     (println "Please specify a path for :out")
+    (System/exit 1))
+  (when (and (some? (:paginate opts))
+             (not (integer? (:paginate opts))))
+    (println ":paginate can only be a whole number")
     (System/exit 1)))
 
 (defn build [opts]
