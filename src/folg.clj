@@ -8,13 +8,13 @@
             [optimus.export]
             [juxt.dirwatch :refer [watch-dir close-watcher]]))
 
-(defn wrap-html [{:keys [deploy-path title]} s]
+(defn wrap-html [{:keys [deploy-path title heading]} s]
   (str "<!DOCTYPE html>
        <html>
        <head>
          <meta charset=\"utf-8\">
          <link rel=\"stylesheet\" href=\"" deploy-path "/style.css\">
-         <title>" title "</title>
+         <title>" (str title (when heading (str " - " heading))) "</title>
        </head>
        <body>
          <h1>" title "</h1><hr>"
@@ -93,12 +93,12 @@
       (cond
 
         toc
-        (into {} (map (fn [[prev-post [path :as post] next-post]]
+        (into {} (map (fn [[prev-post [path {:keys [metadata]} :as post] next-post]]
                         [(path->url path)
                          (->> (post->html post)
                               (wrap-navigation {:include-home true :deploy-path deploy-path}
                                                prev-post next-post)
-                              (wrap-html {:deploy-path deploy-path :title title}))]))
+                              (wrap-html {:deploy-path deploy-path :title title :heading (get-meta-title metadata)}))]))
               (partition 3 1 (concat [nil] posts [nil])))
 
         paginate
