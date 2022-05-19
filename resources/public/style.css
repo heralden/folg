@@ -1,0 +1,47 @@
+html {
+  max-width: 70ch;
+  padding: 3em 1em;
+  margin: auto;
+  line-height: 1.75;
+  font-size: 1.25em;
+}
+
+h1,h2,h3,h4,h5,h6 {
+  margin: 3em 0 1em;
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 400;
+}
+
+p,ul,ol {
+  margin-bottom: 2em;
+  color: #1d1d1d;
+  font-family: Georgia, Times, serif;
+}
+
+img {
+  width: 100%;
+  height: auto;
+}
+
+.post-date {
+  font-size: 0.5em;
+  opacity: 0.4;
+}
+
+.post-navigation {
+  display: flex;
+  justify-content: space-between;
+}
+
+.post-navigation > * {
+  flex: 1;
+  text-align: center;
+}
+
+.post-navigation > *:first-child {
+  text-align: left;
+}
+
+.post-navigation > *:last-child {
+  text-align: right;
+}

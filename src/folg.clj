@@ -8,60 +8,12 @@
             [optimus.export]
             [juxt.dirwatch :refer [watch-dir close-watcher]]))
 
-(defn wrap-html [title s]
+(defn wrap-html [{:keys [deploy-path title]} s]
   (str "<!DOCTYPE html>
        <html>
        <head>
          <meta charset=\"utf-8\">
-         <style>
-html {
-  max-width: 70ch;
-  padding: 3em 1em;
-  margin: auto;
-  line-height: 1.75;
-  font-size: 1.25em;
-}
-
-h1,h2,h3,h4,h5,h6 {
-  margin: 3em 0 1em;
-  font-family: Helvetica, Arial, sans-serif;
-  font-weight: 400;
-}
-
-p,ul,ol {
-  margin-bottom: 2em;
-  color: #1d1d1d;
-  font-family: Georgia, Times, serif;
-}
-
-img {
-  width: 100%;
-  height: auto;
-}
-
-.post-date {
-  font-size: 0.5em;
-  opacity: 0.4;
-}
-
-.post-navigation {
-  display: flex;
-  justify-content: space-between;
-}
-
-.post-navigation > * {
-  flex: 1;
-  text-align: center;
-}
-
-.post-navigation > *:first-child {
-  text-align: left;
-}
-
-.post-navigation > *:last-child {
-  text-align: right;
-}
-         </style>
+         <link rel=\"stylesheet\" href=\"" deploy-path "/style.css\">
          <title>" title "</title>
        </head>
        <body>
@@ -146,7 +98,7 @@ img {
                          (->> (post->html post)
                               (wrap-navigation {:include-home true :deploy-path deploy-path}
                                                prev-post next-post)
-                              (wrap-html title))]))
+                              (wrap-html {:deploy-path deploy-path :title title}))]))
               (partition 3 1 (concat [nil] posts [nil])))
 
         paginate
@@ -159,19 +111,20 @@ img {
                                                  [(if (> index 1) (str "/" (dec index) "/") "/") {:metadata {:title ["Previous"]}}]
                                                  (when (< (inc index) (count paginated-posts))
                                                    [(str "/" (inc index) "/") {:metadata {:title ["Next"]}}]))
-                                (wrap-html title))]))
+                                (wrap-html {:deploy-path deploy-path :title title}))]))
                 (drop 1 paginated-posts))))
 
       {"/index.html"
-       (wrap-html title (cond
-                          toc (str (create-toc posts :deploy-path deploy-path)
-                                   (->> (post->html (first posts))
-                                        (wrap-navigation {:no-top true :deploy-path deploy-path} nil (second posts))))
-                          paginate (->> (take paginate posts)
-                                        (map post->html)
-                                        (str/join "<hr>")
-                                        (wrap-navigation {:no-top true :deploy-path deploy-path} nil ["/1/" {:metadata {:title ["Next"]}}]))
-                          :else (str/join "<hr>" (map post->html posts))))})))
+       (wrap-html {:deploy-path deploy-path :title title}
+                  (cond
+                    toc (str (create-toc posts :deploy-path deploy-path)
+                             (->> (post->html (first posts))
+                                  (wrap-navigation {:no-top true :deploy-path deploy-path} nil (second posts))))
+                    paginate (->> (take paginate posts)
+                                  (map post->html)
+                                  (str/join "<hr>")
+                                  (wrap-navigation {:no-top true :deploy-path deploy-path} nil ["/1/" {:metadata {:title ["Next"]}}]))
+                    :else (str/join "<hr>" (map post->html posts))))})))
 
 (comment
   (create-pages {"/foo/path.html" {:metadata {:title ["Foo"]
@@ -217,7 +170,7 @@ img {
           title (str (or title "Blog"))
           file-names (get-file-names!)
           assets-data (when (some #(re-find #"(?i).+\.(jpg|png)" %) file-names)
-                        (assets/load-assets "public" [#"(?i).+\.(jpg|png)"]))
+                        (assets/load-assets "public" ["/style.css" #"(?i).+\.(jpg|png)"]))
           assets (optimizations/all assets-data {})
           md-pages (when (some #(re-find #"\.md$" %) file-names)
                      (stasis/slurp-directory "resources/public/" #"\.md$"))
