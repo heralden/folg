@@ -73,17 +73,17 @@ img {
 (def url-cmap
   {\space "%20"})
 
-(defn append-images [md image-paths]
+(defn append-images [md image-paths & {:keys [deploy-path]}]
   (if (seq image-paths)
     (str md "\n\n"
          (->> (sort image-paths)
-              (map #(str "![Failed to load image](." (str/escape % url-cmap) ")"))
+              (map #(str "![Failed to load image](" deploy-path (str/escape % url-cmap) ")"))
               (str/join "\n")))
     md))
 
 (comment
   (= (append-images "Foo" ["/foo/baz.jpg" "/foo/with spaces.png"])
-     "Foo\n\n![Failed to load image](./foo/baz.jpg)\n![Failed to load image](./foo/with%20spaces.png)"))
+     "Foo\n\n![Failed to load image](/foo/baz.jpg)\n![Failed to load image](/foo/with%20spaces.png)"))
 
 (defn get-related [path assets-data]
   (let [md-dir (drop-last (str/split path #"/"))]
@@ -102,11 +102,11 @@ img {
   [filepath]
   (str/replace filepath #"/[^/]*$" "/"))
 
-(defn create-toc [posts]
+(defn create-toc [posts & {:keys [deploy-path]}]
   (str "<ul>"
        (str/join
          (map (fn [[path {:keys [metadata]}]]
-                (str "<a href=\"." (path->url path) "\"><li>" (first (:title metadata)) "</li></a>"))
+                (str "<a href=\"" deploy-path (path->url path) "\"><li>" (first (:title metadata)) "</li></a>"))
               posts))
        "</ul>"))
 
@@ -119,23 +119,23 @@ img {
        "</h2>"
        html))
 
-(defn wrap-navigation [{:keys [include-home no-top]}
+(defn wrap-navigation [{:keys [include-home no-top deploy-path]}
                        [prev-path {prev-meta :metadata}] [next-path {next-meta :metadata}] s]
   (let [nav (str "<div class=\"post-navigation\">"
                  "<span>"
                  (when prev-path
-                   (str "« <a href=\".." (path->url prev-path) "\">" (get-meta-title prev-meta) "</a>"))
+                   (str "« <a href=\"" deploy-path (path->url prev-path) "\">" (get-meta-title prev-meta) "</a>"))
                  "</span>"
                  (when include-home
-                   "<a href=\"../\">Home</a>")
+                   (str "<a href=\"" (or deploy-path "/") "\">Home</a>"))
                  "<span>"
                  (when next-path
-                   (str "<a href=\".." (path->url next-path) "\">" (get-meta-title next-meta) "</a> »"))
+                   (str "<a href=\"" deploy-path (path->url next-path) "\">" (get-meta-title next-meta) "</a> »"))
                  "</span>"
                  "</div>")]
     (str (when-not no-top nav) s nav)))
 
-(defn create-pages [pages title & {:keys [toc paginate]}]
+(defn create-pages [pages title & {:keys [toc paginate deploy-path]}]
   (let [posts (sort-by (comp first :date :metadata val) #(compare %2 %1) pages)]
     (merge
       (cond
@@ -144,7 +144,8 @@ img {
         (into {} (map (fn [[prev-post [path :as post] next-post]]
                         [(path->url path)
                          (->> (post->html post)
-                              (wrap-navigation {:include-home true} prev-post next-post)
+                              (wrap-navigation {:include-home true :deploy-path deploy-path}
+                                               prev-post next-post)
                               (wrap-html title))]))
               (partition 3 1 (concat [nil] posts [nil])))
 
@@ -154,7 +155,7 @@ img {
                           [(str "/" index "/")
                            (->> (map post->html the-posts)
                                 (str/join "<hr>")
-                                (wrap-navigation {:no-top true}
+                                (wrap-navigation {:no-top true :deploy-path deploy-path}
                                                  [(if (> index 1) (str "/" (dec index) "/") "/") {:metadata {:title ["Previous"]}}]
                                                  (when (< (inc index) (count paginated-posts))
                                                    [(str "/" (inc index) "/") {:metadata {:title ["Next"]}}]))
@@ -163,13 +164,13 @@ img {
 
       {"/index.html"
        (wrap-html title (cond
-                          toc (str (create-toc posts)
+                          toc (str (create-toc posts :deploy-path deploy-path)
                                    (->> (post->html (first posts))
-                                        (wrap-navigation {:no-top true} nil (second posts))))
+                                        (wrap-navigation {:no-top true :deploy-path deploy-path} nil (second posts))))
                           paginate (->> (take paginate posts)
                                         (map post->html)
                                         (str/join "<hr>")
-                                        (wrap-navigation {:no-top true} nil ["/1/" {:metadata {:title ["Next"]}}]))
+                                        (wrap-navigation {:no-top true :deploy-path deploy-path} nil ["/1/" {:metadata {:title ["Next"]}}]))
                           :else (str/join "<hr>" (map post->html posts))))})))
 
 (comment
@@ -210,7 +211,7 @@ img {
   (keep #(when (.isFile %) (.getName %))
         (file-seq (io/file "resources/public"))))
 
-(defn generate-site! [{:keys [out title toc paginate] :as _opts}]
+(defn generate-site! [{:keys [out title toc paginate deploy-path] :as _opts}]
   (when (.exists (io/file "resources/public"))
     (let [target-dir (str out)
           title (str (or title "Blog"))
@@ -222,12 +223,12 @@ img {
                      (stasis/slurp-directory "resources/public/" #"\.md$"))
           pages (into {} (map (fn [[path md]]
                                 [(str/replace path #"\.md$" ".html")
-                                 (-> (append-images md (get-related path assets-data))
+                                 (-> (append-images md (get-related path assets-data) :deploy-path deploy-path)
                                      (md/md-to-html-string-with-meta))]))
                       md-pages)]
       (stasis/empty-directory! target-dir)
       (optimus.export/save-assets assets target-dir)
-      (stasis/export-pages (create-pages pages title :toc toc :paginate paginate)
+      (stasis/export-pages (create-pages pages title :toc toc :paginate paginate :deploy-path deploy-path)
                            target-dir
                            {:optimus-assets assets}))))
 
